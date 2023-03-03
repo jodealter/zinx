@@ -1,6 +1,7 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jodealter/zinx/ziface"
 	"net"
@@ -21,6 +22,16 @@ type Server struct {
 	Port int
 }
 
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+	//回显业务
+	fmt.Println("[Conn handle]callbacktoclient...")
+	if _, err := conn.Write(data); err != nil {
+		fmt.Println("write to client error", err)
+		return errors.New("callbacktoclient error")
+	}
+	cnt++
+	return nil
+}
 func (s *Server) Start() {
 	fmt.Printf("[strat] server listenr at ip:%s, port:%d\n", s.IP, s.Port)
 	go func() {
@@ -43,20 +54,14 @@ func (s *Server) Start() {
 				fmt.Println("accept err ", err)
 				continue
 			}
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					_, err := conn.Read(buf)
-					if err != nil {
-						fmt.Println("recv err  ", err)
-						continue
-					}
-					if _, err := conn.Write(buf); err != nil {
-						fmt.Println("write err ", err)
-						continue
-					}
-				}
-			}()
+			var cid uint32
+			cid = 0
+
+			//奖处理新连接的业务方法和conn进行绑定
+			dealconn := NewConnect(conn, cid, CallBackToClient)
+			cid++
+
+			go dealconn.Start()
 		}
 	}()
 }
