@@ -16,11 +16,12 @@ type Connection struct {
 	//当前链接状态
 	isClose bool
 
-	//当前链接所绑定的处理方法业务
-	handAPI ziface.HandleFunc
-
 	//告知当前链接已经退出 的channel
 	ExitChan chan bool
+
+	//当前链接处理的rouder
+	//同sercer的那个
+	Rouder ziface.IRouter
 }
 
 func (c *Connection) StartReader() {
@@ -33,15 +34,24 @@ func (c *Connection) StartReader() {
 
 		//读取最大512字节的数据到buf中
 		buf := make([]byte, 512)
-		cont, err := c.Conn.Read(buf)
+		_, err := c.Conn.Read(buf)
 		if err != nil {
 			continue
 		}
 
-		//调用当前链接所绑定的handleapi
-		if err := c.handAPI(c.Conn, buf, cont); err != nil {
-			break
+		//得到当前connect的请求(request)
+		request := Request{
+			data: buf,
+			conn: c,
 		}
+
+		//执行注册的路由方法
+		go func(request ziface.IRequest) {
+			c.Rouder.PreHandle(request)
+			c.Rouder.Handle(request)
+			c.Rouder.PostHandle(request)
+
+		}(&request)
 	}
 }
 
@@ -85,11 +95,11 @@ func (c *Connection) Send(data []byte) error {
 	return nil
 }
 
-func NewConnect(conn *net.TCPConn, connID uint32, callback_api ziface.HandleFunc) *Connection {
+func NewConnect(conn *net.TCPConn, connID uint32, router ziface.IRouter) *Connection {
 	c := &Connection{
 		Conn:     conn,
 		ConnID:   connID,
-		handAPI:  callback_api,
+		Rouder:   router,
 		isClose:  false,
 		ExitChan: make(chan bool, 1),
 	}

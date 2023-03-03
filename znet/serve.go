@@ -1,7 +1,6 @@
 package znet
 
 import (
-	"errors"
 	"fmt"
 	"github.com/jodealter/zinx/ziface"
 	"net"
@@ -20,18 +19,16 @@ type Server struct {
 
 	//服务器监听的端口
 	Port int
+
+	//添加一个router，也就是这个server绑定的业务
+	//本人觉得不太好，应该做一个切片类型的。这样，使用的时候可以绑定多个方法
+	Router ziface.IRouter
 }
 
-func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-	//回显业务
-	fmt.Println("[Conn handle]callbacktoclient...")
-	if _, err := conn.Write(data); err != nil {
-		fmt.Println("write to client error", err)
-		return errors.New("callbacktoclient error")
-	}
-	cnt++
-	return nil
+func (s *Server) AddRouter(router ziface.IRouter) {
+	s.Router = router
 }
+
 func (s *Server) Start() {
 	fmt.Printf("[strat] server listenr at ip:%s, port:%d\n", s.IP, s.Port)
 	go func() {
@@ -58,7 +55,7 @@ func (s *Server) Start() {
 			cid = 0
 
 			//奖处理新连接的业务方法和conn进行绑定
-			dealconn := NewConnect(conn, cid, CallBackToClient)
+			dealconn := NewConnect(conn, cid, s.Router)
 			cid++
 
 			go dealconn.Start()
@@ -83,6 +80,7 @@ func NewServr(name string) ziface.IServer {
 		IPVersion: "tcp4",
 		IP:        "0.0.0.0",
 		Port:      8999,
+		Router:    nil,
 	}
 	return s
 }
