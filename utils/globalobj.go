@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"github.com/jodealter/zinx/ziface"
-	"os"
+	"io/ioutil"
 )
 
 /*
@@ -27,11 +27,11 @@ type GlobalObj struct {
 /*定义一个全局的Globalobj*/
 
 func (g *GlobalObj) Reload() {
-	data, err := os.ReadFile("conf/zinx.json")
+	data, err := ioutil.ReadFile("conf/zinx.json")
 	if err != nil {
 		panic(err)
 	}
-	err = json.Unmarshal(data, *GlobalObject)
+	err = json.Unmarshal(data, &GlobalObject)
 	if err != nil {
 		panic(err)
 	}
