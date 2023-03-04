@@ -6,6 +6,7 @@ import (
 	"net"
 )
 
+// ceshi
 type Server struct {
 
 	//服务器名称
