@@ -2,6 +2,7 @@ package znet
 
 import (
 	"fmt"
+	"github.com/jodealter/zinx/utils"
 	"github.com/jodealter/zinx/ziface"
 	"net"
 )
@@ -33,7 +34,7 @@ func (c *Connection) StartReader() {
 	for {
 
 		//读取最大512字节的数据到buf中
-		buf := make([]byte, 512)
+		buf := make([]byte, utils.GlobalObject.MaxPackageSize)
 		_, err := c.Conn.Read(buf)
 		if err != nil {
 			continue
