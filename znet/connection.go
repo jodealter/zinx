@@ -146,7 +146,7 @@ func (c *Connection) Stop() {
 	c.ExitChan <- true
 	//回收资源
 	close(c.ExitChan)
-	close(c.ExitChan)
+	close(c.MsgChan)
 }
 
 func (c *Connection) GetTCPConnection() *net.TCPConn {
