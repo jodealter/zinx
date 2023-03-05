@@ -19,5 +19,5 @@ func (r *Request) GetData() []byte {
 }
 
 func (r *Request) GetMsgId() uint32 {
-	return r.GetMsgId()
+	return r.msg.GetMsgId()
 }
