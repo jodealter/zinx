@@ -51,6 +51,7 @@ func (s *Server) Start() {
 			fmt.Println("listen ", s.IPVersion, "err", err)
 			return
 		}
+		fmt.Println("Start Zinx server succ ,", s.Name, " is Listining...")
 		for {
 			conn, err := listener.AcceptTCP()
 			if err != nil {

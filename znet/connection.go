@@ -18,9 +18,11 @@ type Connection struct {
 	//当前链接状态
 	isClose bool
 
-	//告知当前链接已经退出 的channel
+	//告知当前链接已经退出 的channel 由Reader告知Writer
 	ExitChan chan bool
 
+	//创建一个无缓冲的通道 用于读写之间的通道
+	MsgChan chan []byte
 	//当前链接处理的rouder
 	//同sercer的那个
 
@@ -29,9 +31,9 @@ type Connection struct {
 }
 
 func (c *Connection) StartReader() {
-	fmt.Println("reader goroutine is running")
+	fmt.Println("[Reader goroutine is running]")
 
-	defer fmt.Println("connid ", c.ConnID, "reader is exit,remote addr is ", c.RemoteAddr().String())
+	defer fmt.Println("connid ", c.ConnID, "[Reader is exit],remote addr is ", c.RemoteAddr().String())
 	defer c.Stop()
 
 	for {
@@ -82,6 +84,28 @@ func (c *Connection) StartReader() {
 	}
 }
 
+/*
+写消息的gorotinue 专门发送给客户的模块
+*/
+func (c *Connection) StartWrite() {
+	fmt.Println("[Writer gorotinue is running...]")
+	defer fmt.Println(c.Conn.RemoteAddr().String(), "  [conn Writer exit!]")
+	for {
+		select {
+		case data := <-c.MsgChan:
+			{
+				if _, err := c.Conn.Write(data); err != nil {
+					fmt.Println("Send data error,", err)
+					return
+				}
+			}
+		case <-c.ExitChan:
+			//代表reader 已经退出
+			return
+		}
+	}
+}
+
 // 提供sendmsg方法
 func (c *Connection) SendMsg(msgid uint32, data []byte) error {
 	if c.isClose == true {
@@ -96,15 +120,15 @@ func (c *Connection) SendMsg(msgid uint32, data []byte) error {
 	}
 
 	//将数据发送给客户端
-	if _, err := c.GetTCPConnection().Write(binaryMsg); err != nil {
-		fmt.Println("write error msgid = ", msgid)
-		return errors.New("write to conn[client]  error")
-	}
+	c.MsgChan <- binaryMsg
 	return nil
 }
 func (c *Connection) Start() {
 	fmt.Println("conn is star....   connid = ", c.ConnID)
+
+	//开启读写的协程
 	go c.StartReader()
+	go c.StartWrite()
 }
 
 func (c *Connection) Stop() {
@@ -118,7 +142,10 @@ func (c *Connection) Stop() {
 	//关闭链接
 	c.Conn.Close()
 
-	//关闭通道
+	//告知Writer关闭
+	c.ExitChan <- true
+	//回收资源
+	close(c.ExitChan)
 	close(c.ExitChan)
 }
 
@@ -143,6 +170,7 @@ func NewConnect(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandler) *C
 		ConnID:     connID,
 		MsgHandler: handler,
 		isClose:    false,
+		MsgChan:    make(chan []byte),
 		ExitChan:   make(chan bool, 1),
 	}
 	return c
