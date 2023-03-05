@@ -29,7 +29,7 @@ type Server struct {
 
 func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
 	s.MsgHandler.AddRouter(msgID, router)
-	fmt.Printf("add router succ")
+	fmt.Printf("add router succ\n")
 }
 
 func (s *Server) Start() {

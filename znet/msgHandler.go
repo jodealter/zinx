@@ -30,7 +30,7 @@ func (m *MsgHandler) AddRouter(msgID uint32, router ziface.IRouter) {
 
 func (m *MsgHandler) DoMsgHandler(request ziface.IRequest) {
 	handler, ok := m.Apis[request.GetMsgId()]
-	if ok {
+	if !ok {
 		fmt.Println("api msgid is not found ；", request.GetMsgId())
 	}
 
