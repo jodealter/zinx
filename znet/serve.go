@@ -24,11 +24,12 @@ type Server struct {
 
 	//添加一个router，也就是这个server绑定的业务
 	//本人觉得不太好，应该做一个切片类型的。这样，使用的时候可以绑定多个方法
-	Router ziface.IRouter
+	MsgHandler ziface.IMsgHandler
 }
 
-func (s *Server) AddRouter(router ziface.IRouter) {
-	s.Router = router
+func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
+	s.MsgHandler.AddRouter(msgID, router)
+	fmt.Printf("add router succ")
 }
 
 func (s *Server) Start() {
@@ -60,7 +61,7 @@ func (s *Server) Start() {
 			cid = 0
 
 			//奖处理新连接的业务方法和conn进行绑定
-			dealconn := NewConnect(conn, cid, s.Router)
+			dealconn := NewConnect(conn, cid, s.MsgHandler)
 			cid++
 
 			go dealconn.Start()
@@ -81,11 +82,11 @@ func (s *Server) Serve() {
 }
 func NewServr(name string) ziface.IServer {
 	s := &Server{
-		Name:      utils.GlobalObject.Name,
-		IPVersion: "tcp4",
-		IP:        utils.GlobalObject.Host,
-		Port:      utils.GlobalObject.TcpPort,
-		Router:    nil,
+		Name:       utils.GlobalObject.Name,
+		IPVersion:  "tcp4",
+		IP:         utils.GlobalObject.Host,
+		Port:       utils.GlobalObject.TcpPort,
+		MsgHandler: NewMsgHandler(),
 	}
 	return s
 }

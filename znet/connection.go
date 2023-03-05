@@ -23,7 +23,9 @@ type Connection struct {
 
 	//当前链接处理的rouder
 	//同sercer的那个
-	Rouder ziface.IRouter
+
+	//处理msgid 与 api的关系
+	MsgHandler ziface.IMsgHandler
 }
 
 func (c *Connection) StartReader() {
@@ -76,12 +78,7 @@ func (c *Connection) StartReader() {
 		}
 
 		//执行注册的路由方法
-		go func(request ziface.IRequest) {
-			c.Rouder.PreHandle(request)
-			c.Rouder.Handle(request)
-			c.Rouder.PostHandle(request)
-
-		}(&request)
+		go c.MsgHandler.DoMsgHandler(&request)
 	}
 }
 
@@ -140,13 +137,13 @@ func (c *Connection) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
 
-func NewConnect(conn *net.TCPConn, connID uint32, router ziface.IRouter) *Connection {
+func NewConnect(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandler) *Connection {
 	c := &Connection{
-		Conn:     conn,
-		ConnID:   connID,
-		Rouder:   router,
-		isClose:  false,
-		ExitChan: make(chan bool, 1),
+		Conn:       conn,
+		ConnID:     connID,
+		MsgHandler: handler,
+		isClose:    false,
+		ExitChan:   make(chan bool, 1),
 	}
 	return c
 }
