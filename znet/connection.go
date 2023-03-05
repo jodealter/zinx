@@ -1,9 +1,10 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
-	"github.com/jodealter/zinx/utils"
 	"github.com/jodealter/zinx/ziface"
+	"io"
 	"net"
 )
 
@@ -34,15 +35,43 @@ func (c *Connection) StartReader() {
 	for {
 
 		//读取最大512字节的数据到buf中
-		buf := make([]byte, utils.GlobalObject.MaxPackageSize)
-		_, err := c.Conn.Read(buf)
+		/*
+			buf := make([]byte, utils.GlobalObject.MaxPackageSize)
+			_, err := c.Conn.Read(buf)
+			if err != nil {
+				continue
+			}
+		*/
+		//创建一个拆包对象
+		dp := DataPack{}
+
+		//读取客户端的Msg Head 二进制流 8字节的数据
+		MsgHead := make([]byte, dp.GetHeadLen())
+		_, err := io.ReadFull(c.GetTCPConnection(), MsgHead)
 		if err != nil {
-			continue
+			fmt.Println("read msghead error : ", err)
+			break
+		}
+		//拆包，得到MsgId与吗、MsgDataLen 放在msg消息中
+		msg, err := dp.UnPack(MsgHead)
+		if err != nil {
+			fmt.Println("unpack error :", err)
+			break
 		}
 
+		//再次读取数据存放在data 中
+		var data []byte
+		if msg.GetMsglen() > 0 {
+			data = make([]byte, msg.GetMsglen())
+			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
+				fmt.Println("read msg error ：", err)
+				break
+			}
+		}
+		msg.SetData(data)
 		//得到当前connect的请求(request)
 		request := Request{
-			data: buf,
+			msg:  msg,
 			conn: c,
 		}
 
@@ -56,6 +85,26 @@ func (c *Connection) StartReader() {
 	}
 }
 
+// 提供sendmsg方法
+func (c *Connection) SendMsg(msgid uint32, data []byte) error {
+	if c.isClose == true {
+		return errors.New("Connection closed when sendmsg")
+	}
+	//将message进行封包
+	dp := DataPack{}
+	binaryMsg, err := dp.Pack(NewMessage(msgid, data))
+	if err != nil {
+		fmt.Println("pack error msgid =  ", msgid)
+		return errors.New("Pack error msg")
+	}
+
+	//将数据发送给客户端
+	if _, err := c.GetTCPConnection().Write(binaryMsg); err != nil {
+		fmt.Println("write error msgid = ", msgid)
+		return errors.New("write to conn[client]  error")
+	}
+	return nil
+}
 func (c *Connection) Start() {
 	fmt.Println("conn is star....   connid = ", c.ConnID)
 	go c.StartReader()
@@ -89,11 +138,6 @@ func (c *Connection) GetConnID() uint32 {
 func (c *Connection) RemoteAddr() net.Addr {
 	//TODO implement me
 	return c.Conn.RemoteAddr()
-}
-
-func (c *Connection) Send(data []byte) error {
-	//TODO implement me
-	return nil
 }
 
 func NewConnect(conn *net.TCPConn, connID uint32, router ziface.IRouter) *Connection {
