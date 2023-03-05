@@ -47,17 +47,17 @@ func (c *Connection) StartReader() {
 			}
 		*/
 		//创建一个拆包对象
-		dp := DataPack{}
+		dp := NewDataPack()
 
 		//读取客户端的Msg Head 二进制流 8字节的数据
-		MsgHead := make([]byte, dp.GetHeadLen())
-		_, err := io.ReadFull(c.GetTCPConnection(), MsgHead)
+		headData := make([]byte, dp.GetHeadLen())
+		_, err := io.ReadFull(c.GetTCPConnection(), headData)
 		if err != nil {
 			fmt.Println("read msghead error : ", err)
 			break
 		}
 		//拆包，得到MsgId与吗、MsgDataLen 放在msg消息中
-		msg, err := dp.UnPack(MsgHead)
+		msg, err := dp.UnPack(headData)
 		if err != nil {
 			fmt.Println("unpack error :", err)
 			break
