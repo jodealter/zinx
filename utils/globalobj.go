@@ -19,9 +19,11 @@ type GlobalObj struct {
 	Name      string         //服务器的名字
 
 	/*zinx*/
-	Version        string //zinx的版本
-	MaxConn        int    //允许链接的最大数木
-	MaxPackageSize uint32 //数据包的最大值
+	Version          string //zinx的版本
+	MaxConn          int    //允许链接的最大数木
+	MaxPackageSize   uint32 //数据包的最大值
+	WorkPoolSize     uint32 //当前业务工作worker的goroutine的数量
+	MaxWorkerTaskLen uint32 //队列长度
 }
 
 /*定义一个全局的Globalobj*/
@@ -47,6 +49,9 @@ func init() {
 		Host:           "0.0.0.0",
 		MaxConn:        1000,
 		MaxPackageSize: 4096,
+
+		WorkPoolSize:     10,
+		MaxWorkerTaskLen: 1024,
 	}
 	GlobalObject.Reload()
 }

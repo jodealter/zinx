@@ -3,6 +3,7 @@ package znet
 import (
 	"errors"
 	"fmt"
+	"github.com/jodealter/zinx/utils"
 	"github.com/jodealter/zinx/ziface"
 	"io"
 	"net"
@@ -79,8 +80,13 @@ func (c *Connection) StartReader() {
 			conn: c,
 		}
 
-		//执行注册的路由方法
-		go c.MsgHandler.DoMsgHandler(&request)
+		if utils.GlobalObject.WorkPoolSize > 0 {
+			//已经开启了工作池机制，将请求发送给worker就好
+			c.MsgHandler.SendMsgToTaskQueue(&request)
+		} else {
+			//未开启线程池机制，直接开go程
+			go c.MsgHandler.DoMsgHandler(&request)
+		}
 	}
 }
 
