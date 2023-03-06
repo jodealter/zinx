@@ -1,6 +1,8 @@
 package ziface
 
-import "net"
+import (
+	"net"
+)
 
 type IConnection interface {
 	//启动链接
@@ -20,6 +22,15 @@ type IConnection interface {
 
 	//发送数据
 	SendMsg(msgid uint32, data []byte) error
+
+	//设置链接属性
+	SetProperty(key string, value interface{})
+
+	//获取链接属性
+	GetProperty(key string) (interface{}, error)
+
+	//移除链接属性
+	RemoveProperty(key string)
 }
 
 // 定义一个处理链接业务的方法

@@ -7,6 +7,7 @@ import (
 	"github.com/jodealter/zinx/ziface"
 	"io"
 	"net"
+	"sync"
 )
 
 type Connection struct {
@@ -32,6 +33,35 @@ type Connection struct {
 
 	//处理msgid 与 api的关系
 	MsgHandler ziface.IMsgHandler
+
+	//链接属性的集合
+	property map[string]interface{}
+
+	//保护上边属性的写
+	propertyLock sync.RWMutex
+}
+
+func (c *Connection) SetProperty(key string, value interface{}) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+	c.property[key] = value
+}
+
+func (c *Connection) GetProperty(key string) (interface{}, error) {
+	c.propertyLock.RLock()
+	defer c.propertyLock.RUnlock()
+	if value, ok := c.property[key]; ok {
+		return value, nil
+	} else {
+		return nil, errors.New("not found property")
+	}
+
+}
+
+func (c *Connection) RemoveProperty(key string) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+	delete(c.property, key)
 }
 
 func (c *Connection) StartReader() {
@@ -167,17 +197,17 @@ func (c *Connection) Stop() {
 }
 
 func (c *Connection) GetTCPConnection() *net.TCPConn {
-	//TODO implement me
+
 	return c.Conn
 }
 
 func (c *Connection) GetConnID() uint32 {
-	//TODO implement me
+
 	return c.ConnID
 }
 
 func (c *Connection) RemoteAddr() net.Addr {
-	//TODO implement me
+
 	return c.Conn.RemoteAddr()
 }
 
