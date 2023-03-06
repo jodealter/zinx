@@ -15,4 +15,12 @@ type IServer interface {
 
 	//返回ConnManager
 	GetConnMgr() IConnManager
+	//注册OnConnStart钩子方法
+	SetOnConnStart(func(conn IConnection))
+	//注册OnConnStop钩子方法
+	SetOnConnStop(func(conn IConnection))
+	//调用OnConnStart函数的方法
+	CallOnConnStart(conn IConnection)
+	//调用OnConnStop函数的方法
+	CallOnConnStop(conn IConnection)
 }

@@ -28,6 +28,12 @@ type Server struct {
 
 	//该server的链接管理模块
 	ConnMgr ziface.IConnManager
+
+	//该Server创建链接之后自动调Hook函数OnConnStart
+	onConnStart func(conn ziface.IConnection)
+
+	//该Server断开链接之前自动调Hook函数OnConnStop
+	onConnStop func(conn ziface.IConnection)
 }
 
 func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
@@ -112,4 +118,26 @@ func NewServr(name string) ziface.IServer {
 		ConnMgr:    NewConnManager(),
 	}
 	return s
+}
+
+func (s *Server) SetOnConnStart(f func(conn ziface.IConnection)) {
+	s.onConnStart = f
+}
+
+func (s *Server) SetOnConnStop(f func(conn ziface.IConnection)) {
+	s.onConnStop = f
+}
+
+func (s *Server) CallOnConnStart(conn ziface.IConnection) {
+	if s.onConnStart != nil {
+		fmt.Println("----->Call OnConnStart()...")
+		s.onConnStart(conn)
+	}
+}
+
+func (s *Server) CallOnConnStop(conn ziface.IConnection) {
+	if s.onConnStop != nil {
+		fmt.Println("----->Call OnConnStop()...")
+		s.onConnStop(conn)
+	}
 }

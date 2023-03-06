@@ -138,6 +138,9 @@ func (c *Connection) Start() {
 	//开启读写的协程
 	go c.StartReader()
 	go c.StartWrite()
+
+	//启动当前链接写数据的业务
+	go c.TcpServer.CallOnConnStart(c)
 }
 
 func (c *Connection) Stop() {
@@ -148,6 +151,8 @@ func (c *Connection) Stop() {
 
 	c.isClose = true
 
+	//调用开发者注册的链接销毁之前的，需要执行的钩子函数
+	c.TcpServer.CallOnConnStop(c)
 	//关闭链接
 	c.Conn.Close()
 
