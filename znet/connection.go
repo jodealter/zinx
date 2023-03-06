@@ -220,6 +220,7 @@ func NewConnect(server ziface.IServer, conn *net.TCPConn, connID uint32, handler
 		isClose:    false,
 		MsgChan:    make(chan []byte),
 		ExitChan:   make(chan bool, 1),
+		property:   make(map[string]interface{}),
 	}
 	//将conn加入到connmanager中
 	c.TcpServer.GetConnMgr().Add(c)
