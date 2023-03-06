@@ -10,6 +10,9 @@ import (
 )
 
 type Connection struct {
+	//当前connection隶属于那个server
+	TcpServer ziface.IServer
+
 	//当前链接的socket套接字
 	Conn *net.TCPConn
 
@@ -150,6 +153,9 @@ func (c *Connection) Stop() {
 
 	//告知Writer关闭
 	c.ExitChan <- true
+
+	//将当前链接从ConnMgr中删除
+	c.TcpServer.GetConnMgr().Remove(c)
 	//回收资源
 	close(c.ExitChan)
 	close(c.MsgChan)
@@ -170,8 +176,9 @@ func (c *Connection) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
 
-func NewConnect(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandler) *Connection {
+func NewConnect(server ziface.IServer, conn *net.TCPConn, connID uint32, handler ziface.IMsgHandler) *Connection {
 	c := &Connection{
+		TcpServer:  server,
 		Conn:       conn,
 		ConnID:     connID,
 		MsgHandler: handler,
@@ -179,5 +186,8 @@ func NewConnect(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandler) *C
 		MsgChan:    make(chan []byte),
 		ExitChan:   make(chan bool, 1),
 	}
+	//将conn加入到connmanager中
+	c.TcpServer.GetConnMgr().Add(c)
+
 	return c
 }

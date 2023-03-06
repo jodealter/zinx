@@ -25,6 +25,9 @@ type Server struct {
 	//添加一个router，也就是这个server绑定的业务
 	//本人觉得不太好，应该做一个切片类型的。这样，使用的时候可以绑定多个方法
 	MsgHandler ziface.IMsgHandler
+
+	//该server的链接管理模块
+	ConnMgr ziface.IConnManager
 }
 
 func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
@@ -55,17 +58,25 @@ func (s *Server) Start() {
 			return
 		}
 		fmt.Println("Start Zinx server succ ,", s.Name, " is Listining...")
+		var cid uint32
+		cid = 0
 		for {
 			conn, err := listener.AcceptTCP()
 			if err != nil {
 				fmt.Println("accept err ", err)
 				continue
 			}
-			var cid uint32
-			cid = 0
 
+			//判断当前链接是否到达上限
+			//这里之所以不放在accept之前进行判断，是因为可以扩展功能，比如反馈给客户信息
+
+			if s.ConnMgr.Len() >= utils.GlobalObject.MaxConn {
+				fmt.Println("too many Connections")
+				conn.Close()
+				continue
+			}
 			//奖处理新连接的业务方法和conn进行绑定
-			dealconn := NewConnect(conn, cid, s.MsgHandler)
+			dealconn := NewConnect(s, conn, cid, s.MsgHandler)
 			cid++
 
 			go dealconn.Start()
@@ -74,7 +85,8 @@ func (s *Server) Start() {
 }
 
 func (s *Server) Stop() {
-
+	fmt.Println("[STOP] zinx server name ", s.Name)
+	s.ConnMgr.ClearConn()
 }
 
 func (s *Server) Serve() {
@@ -84,6 +96,12 @@ func (s *Server) Serve() {
 
 	select {}
 }
+
+// 返回connManager的方法
+func (s *Server) GetConnMgr() ziface.IConnManager {
+	return s.ConnMgr
+}
+
 func NewServr(name string) ziface.IServer {
 	s := &Server{
 		Name:       utils.GlobalObject.Name,
@@ -91,6 +109,7 @@ func NewServr(name string) ziface.IServer {
 		IP:         utils.GlobalObject.Host,
 		Port:       utils.GlobalObject.TcpPort,
 		MsgHandler: NewMsgHandler(),
+		ConnMgr:    NewConnManager(),
 	}
 	return s
 }

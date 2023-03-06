@@ -12,4 +12,7 @@ type IServer interface {
 
 	//添加router的方法
 	AddRouter(msgID uint32, router IRouter)
+
+	//返回ConnManager
+	GetConnMgr() IConnManager
 }
