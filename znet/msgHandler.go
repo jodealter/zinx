@@ -43,6 +43,8 @@ func (m *MsgHandler) DoMsgHandler(request ziface.IRequest) {
 	handler, ok := m.Apis[request.GetMsgId()]
 	if !ok {
 		fmt.Println("api msgid is not found ；", request.GetMsgId())
+
+		return
 	}
 
 	//根据相应的msgid调度相应的业务
